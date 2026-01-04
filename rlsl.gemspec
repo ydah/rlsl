@@ -28,8 +28,4 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "prism"
-
-  if RUBY_PLATFORM.include?("darwin")
-    spec.add_dependency "metaco"
-  end
 end

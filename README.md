@@ -154,7 +154,22 @@ RLSL supports common shader functions:
 
 - Ruby >= 3.1.0
 - [Prism](https://github.com/ruby/prism) gem (for Ruby parsing)
-- [metaco](https://github.com/ydah/metaco) gem (for Metal shader execution)
+
+### Optional: Metal Shader Execution (macOS only)
+
+To run Metal shaders natively, install the [metaco](https://github.com/ydah/metaco) gem separately:
+
+```bash
+$ gem install metaco
+```
+
+Or add to your Gemfile:
+
+```ruby
+gem "metaco", platforms: :ruby, install_if: -> { RUBY_PLATFORM.include?("darwin") }
+```
+
+MSL code generation (`RLSL.define_metal`) works without metaco. The gem is only required when calling `render_metal` at runtime.
 
 ## Development
 
