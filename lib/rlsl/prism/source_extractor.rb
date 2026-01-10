@@ -98,7 +98,11 @@ module RLSL
             keyword = m[1]
             has_code_before = line[0...i].match?(/\S/)
             # Avoid counting modifier forms like "x = 1 if cond".
-            unless has_code_before && %w[if unless while].include?(keyword)
+            if has_code_before && %w[if unless while].include?(keyword)
+              prev_non_space = line[0...i].rstrip[-1]
+              # Treat "x = if cond" as a block start (Ruby if-expression), not a modifier.
+              tokens << :block_start if prev_non_space == "="
+            else
               tokens << :block_start
             end
             i += keyword.length - 1
