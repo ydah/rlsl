@@ -93,6 +93,18 @@ module RLSL
         end
       end
 
+      def visit_local_variable_operator_write(node)
+        name = node.name.to_sym
+        operator = node.operator.to_s
+        operator = operator[0..-2] if operator.end_with?("=")
+        value = visit(node.value)
+
+        target = IR::VarRef.new(name)
+        expr = IR::BinaryOp.new(operator, IR::VarRef.new(name), value)
+        @declared_vars.add(name)
+        IR::Assignment.new(target, expr)
+      end
+
       def visit_local_variable_read(node)
         name = node.name.to_sym
         type = infer_param_type(name)
@@ -138,6 +150,9 @@ module RLSL
         end
 
         if receiver && args.empty? && !node.arguments
+          # Ruby-only no-op commonly used on constants/arrays.
+          return receiver if method_name == "freeze"
+
           if Builtins.single_component_field?(method_name)
             return IR::FieldAccess.new(receiver, method_name, :float)
           elsif Builtins.swizzle?(method_name)
