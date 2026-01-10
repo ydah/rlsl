@@ -52,6 +52,8 @@ module RLSL
           infer_swizzle(node)
         when IR::IfStatement
           infer_if_statement(node)
+        when IR::Ternary
+          infer_ternary(node)
         when IR::Return
           infer_return(node)
         when IR::Assignment
@@ -164,6 +166,14 @@ module RLSL
         infer(node.else_branch) if node.else_branch
 
         node.type = node.then_branch.type
+        node
+      end
+
+      def infer_ternary(node)
+        infer(node.condition)
+        infer(node.then_expr)
+        infer(node.else_expr)
+        node.type = node.then_expr.type
         node
       end
 

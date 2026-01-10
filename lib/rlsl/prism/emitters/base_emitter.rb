@@ -43,6 +43,8 @@ module RLSL
             emit_swizzle(node)
           when IR::IfStatement
             emit_if_statement(node)
+          when IR::Ternary
+            emit_ternary(node)
           when IR::Return
             emit_return(node)
           when IR::Assignment
@@ -239,6 +241,13 @@ module RLSL
           else
             "if (#{condition}) {\n#{then_code}#{indent}}"
           end
+        end
+
+        def emit_ternary(node)
+          condition = emit(node.condition)
+          then_expr = emit(node.then_expr)
+          else_expr = emit(node.else_expr)
+          "(#{condition} ? #{then_expr} : #{else_expr})"
         end
 
         def elsif_node?(node)

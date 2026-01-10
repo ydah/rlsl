@@ -83,7 +83,7 @@ module RLSL
 
       def visit_local_variable_write(node)
         name = node.name.to_sym
-        value = visit(node.value)
+        value = normalize_expression(visit(node.value))
 
         if @declared_vars.include?(name) || @params.include?(name)
           IR::Assignment.new(IR::VarRef.new(name), value)
@@ -97,7 +97,7 @@ module RLSL
         name = node.name.to_sym
         operator = node.operator.to_s
         operator = operator[0..-2] if operator.end_with?("=")
-        value = visit(node.value)
+        value = normalize_expression(visit(node.value))
 
         target = IR::VarRef.new(name)
         expr = IR::BinaryOp.new(operator, IR::VarRef.new(name), value)
@@ -132,7 +132,7 @@ module RLSL
       end
 
       def visit_parentheses(node)
-        inner = visit(node.body)
+        inner = normalize_expression(visit(node.body))
         if inner.is_a?(IR::Block) && inner.statements.length == 1
           inner = inner.statements.first
         end
@@ -141,8 +141,8 @@ module RLSL
 
       def visit_call(node)
         method_name = node.name.to_s
-        receiver = visit(node.receiver) if node.receiver
-        args = node.arguments&.arguments&.map { |arg| visit(arg) } || []
+        receiver = normalize_expression(visit(node.receiver)) if node.receiver
+        args = node.arguments&.arguments&.map { |arg| normalize_expression(visit(arg)) } || []
 
         if !receiver && args.empty? && @params.include?(method_name.to_sym)
           type = infer_param_type(method_name.to_sym)
@@ -217,7 +217,7 @@ module RLSL
       end
 
       def visit_return(node)
-        expr = node.arguments ? visit(node.arguments.arguments.first) : nil
+        expr = node.arguments ? normalize_expression(visit(node.arguments.arguments.first)) : nil
         IR::Return.new(expr)
       end
 
@@ -253,19 +253,19 @@ module RLSL
       end
 
       def visit_and(node)
-        left = visit(node.left)
-        right = visit(node.right)
+        left = normalize_expression(visit(node.left))
+        right = normalize_expression(visit(node.right))
         IR::BinaryOp.new("&&", left, right, :bool)
       end
 
       def visit_or(node)
-        left = visit(node.left)
-        right = visit(node.right)
+        left = normalize_expression(visit(node.left))
+        right = normalize_expression(visit(node.right))
         IR::BinaryOp.new("||", left, right, :bool)
       end
 
       def visit_not(node)
-        operand = visit(node.expression)
+        operand = normalize_expression(visit(node.expression))
         IR::UnaryOp.new("!", operand, :bool)
       end
 
@@ -312,13 +312,13 @@ module RLSL
       end
 
       def visit_array(node)
-        elements = node.elements.map { |elem| visit(elem) }
+        elements = node.elements.map { |elem| normalize_expression(visit(elem)) }
         IR::ArrayLiteral.new(elements)
       end
 
       def visit_index(node)
-        array = visit(node.receiver)
-        index = visit(node.arguments.arguments.first)
+        array = normalize_expression(visit(node.receiver))
+        index = normalize_expression(visit(node.arguments.arguments.first))
         IR::ArrayIndex.new(array, index)
       end
 
@@ -379,6 +379,31 @@ module RLSL
           :uniforms
         else
           nil
+        end
+      end
+
+      def normalize_expression(node)
+        return node unless node.is_a?(IR::IfStatement)
+
+        then_expr = extract_if_branch_expr(node.then_branch)
+        else_expr = extract_if_branch_expr(node.else_branch)
+
+        unless then_expr && else_expr
+          raise "Unsupported if-expression: branches must be single expressions"
+        end
+
+        IR::Ternary.new(node.condition, then_expr, else_expr)
+      end
+
+      def extract_if_branch_expr(branch)
+        return nil unless branch
+
+        if branch.is_a?(IR::Block)
+          return nil if branch.statements.empty?
+          return nil unless branch.statements.length == 1
+          branch.statements.first
+        else
+          branch
         end
       end
     end
