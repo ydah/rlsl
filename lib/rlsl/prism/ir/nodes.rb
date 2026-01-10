@@ -174,6 +174,22 @@ module RLSL
         end
       end
 
+      class Ternary < Node
+        attr_reader :condition, :then_expr, :else_expr
+
+        def initialize(condition, then_expr, else_expr, type = nil)
+          super()
+          @condition = condition
+          @then_expr = then_expr
+          @else_expr = else_expr
+          @type = type
+        end
+
+        def accept(visitor)
+          visitor.visit_ternary(self)
+        end
+      end
+
       class Return < Node
         attr_reader :expression
 

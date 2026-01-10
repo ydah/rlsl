@@ -78,6 +78,13 @@ module RLSL
           "for (var #{var}: i32 = #{start_val}; #{var} < #{end_val}; #{var}++) {\n#{body}#{indent}}"
         end
 
+        def emit_ternary(node)
+          condition = emit(node.condition)
+          then_expr = emit(node.then_expr)
+          else_expr = emit(node.else_expr)
+          "select(#{else_expr}, #{then_expr}, #{condition})"
+        end
+
         def emit_binary_op(node)
           left = emit_with_precedence(node.left, node.operator)
           right = emit_with_precedence(node.right, node.operator)
