@@ -95,8 +95,13 @@ module RLSL
           elsif prev_is_boundary && line[i..].match?(/\Aelse\b/)
             i += 3
           elsif prev_is_boundary && (m = line[i..].match(/\A(if|unless|while|for|case|def|class|module)\b/))
-            tokens << :block_start
-            i += m[1].length - 1
+            keyword = m[1]
+            has_code_before = line[0...i].match?(/\S/)
+            # Avoid counting modifier forms like "x = 1 if cond".
+            unless has_code_before && %w[if unless while].include?(keyword)
+              tokens << :block_start
+            end
+            i += keyword.length - 1
           elsif prev_is_boundary && line[i..].match?(/\Aend\b/)
             tokens << :end
             i += 2
